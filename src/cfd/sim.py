@@ -2,6 +2,7 @@ import logging
 
 import torch
 import torch.nn.functional as F
+from torch import Tensor
 
 from utils import log_tensor_stats, log
 
@@ -53,9 +54,22 @@ def diffuse(phi, kappa):
     return phi[1:-1, 1:-1]
 
 
-# def advect(phi, u, cell):
+def semi_largangian(phi: Tensor, u: Tensor, cell: Tensor):
 
-#     cell = cell - u*dt
+    cell = cell - u*dt
+    cell = cell.round().long()
+
+    inside = (cell[..., 0] >= 0) & (cell[..., 0] < GRID_X) & \
+             (cell[..., 1] >= 0) & (cell[..., 1] < GRID_Y)
+
+    x = cell[..., 0]
+    y = cell[..., 1]
+
+    advect = torch.zeros_like(phi)
+
+    advect[inside] = phi[x[inside], y[inside]]
+
+    return advect
 
 
 def init():
@@ -85,6 +99,7 @@ def run():
         u = u + f*dt
         u = diffuse(u, kappa=nu)
         div_free(u, p)
+        u = semi_largangian(u, u, cell=cell)
 
     log("post diff")
     log_tensor_stats(u)
