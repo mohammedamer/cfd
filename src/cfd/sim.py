@@ -40,6 +40,9 @@ def div_free(u, p):
     u[..., 0] = u[..., 0] - dt*(p[2:, 1:-1]-p[:-2, 1:-1])/(2*h)
     u[..., 1] = u[..., 1] - dt*(p[1:-1, 2:]-p[1:-1, :-2])/(2*h)
 
+    p = p[1:-1, 1:-1]
+    return u, p
+
 
 def diffuse(phi, kappa):
 
@@ -98,8 +101,9 @@ def run():
     for t in time_steps:
         u = u + f*dt
         u = diffuse(u, kappa=nu)
-        div_free(u, p)
+        u, p = div_free(u, p)
         u = semi_largangian(u, u, cell=cell)
+        u, p = div_free(u, p)
 
     log("post diff")
     log_tensor_stats(u)
