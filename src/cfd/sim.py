@@ -13,17 +13,18 @@ GRID_Y = 128
 dt = 0.01
 T = 2.
 h = 1.
-nu = 10.
-Fy = 1000.
-D = 10.
+nu = 1.
+Fy = 500.
+D = 1.
 
 REACTION_LAMBDA = 0.
 
 DIFF_ITER = 20
 DIV_FREE_ITER = 20
 
-DYE_SQUARE_SIDE = 32
+DYE_RADIUS = 16
 DYE_VAL = 1.
+DYE_S = 0.01
 
 
 def save_gif(dye_sol: Tensor):
@@ -141,8 +142,9 @@ def init():
     centerx = GRID_X // 2
     centery = GRID_Y // 2
 
-    dye_s[centerx-DYE_SQUARE_SIDE//2:centerx+DYE_SQUARE_SIDE//2,
-          centery-DYE_SQUARE_SIDE//2:centery+DYE_SQUARE_SIDE//2] = 1.
+    mask = (cell[..., 0]-centerx)**2 + \
+        (cell[..., 1] - centery)**2 <= DYE_RADIUS**2
+    dye_s[mask] = DYE_S
 
     return u0, p, cell, f, dye, dye_s
 
