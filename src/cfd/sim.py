@@ -171,7 +171,7 @@ def init(gridx, gridy, Fy, dye_radius, dye_source):
 def run(T: float = 2., dt: float = 0.01, nu: float = 1.,
         reaction_lambda: float = 0., dye_diff: float = 1.,
         gridx: int = 128, gridy: int = 128, Fy: float = 500.,
-        dye_radius: float = 4., dye_src: float = 0.01, diff_iter: int = 20,):
+        dye_radius: float = 4., dye_src: float = 1., diff_iter: int = 20,):
 
     u, p, cell, f, dye, dye_s = init(gridx, gridy, Fy, dye_radius, dye_src)
 
@@ -180,7 +180,7 @@ def run(T: float = 2., dt: float = 0.01, nu: float = 1.,
     time_steps = torch.arange(0, T+dt, dt)
 
     for _ in track(time_steps, description="cfd"):
-        u = u + f*dt
+        u = u + f*dye[..., None]*dt
         u = diffuse(u, kappa=nu, dt=dt, diff_iter=diff_iter)
         u, p = div_free(u, p, dt=dt, diff_iter=diff_iter)
         u = semi_largangian(u, u, cell=cell, dt=dt)
