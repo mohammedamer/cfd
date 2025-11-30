@@ -22,7 +22,7 @@ REACTION_LAMBDA = 0.
 DIFF_ITER = 20
 DIV_FREE_ITER = 20
 
-DYE_RADIUS = 16
+DYE_RADIUS = 4
 DYE_VAL = 1.
 DYE_S = 0.01
 
@@ -108,20 +108,68 @@ def diffuse(phi: Tensor, kappa):
 
 def semi_largangian(phi: Tensor, u: Tensor, cell: Tensor):
 
+    if phi.dim() < 3:
+        phi = phi[..., None]
+
     cell = cell - u*dt
-    cell = cell.round().long()
+    q11 = cell.floor().long()
 
-    inside = (cell[..., 0] >= 0) & (cell[..., 0] < GRID_X) & \
-             (cell[..., 1] >= 0) & (cell[..., 1] < GRID_Y)
+    q12 = q11.clone()
+    q12[:, :, 1] += 1
 
+    q21 = q11.clone()
+    q21[:, :, 0] += 1
+
+    q22 = q21.clone()
+    q22[:, :, 1] += 1
+
+    def query(phi, q):
+        inside = (q[..., 0] >= 0) & (q[..., 0] < GRID_X) & \
+            (q[..., 1] >= 0) & (q[..., 1] < GRID_Y)
+
+        x = q[..., 0]
+        y = q[..., 1]
+
+        advect = torch.zeros_like(phi)
+        advect[inside] = phi[x[inside], y[inside]]
+        return advect
+
+    # N, N
+    fq11 = query(phi, q11)
+    fq12 = query(phi, q12)
+    fq21 = query(phi, q21)
+    fq22 = query(phi, q22)
+
+    # N, N
     x = cell[..., 0]
+    x1 = q11[..., 0]
+    x2 = q21[..., 0]
+
     y = cell[..., 1]
+    y1 = q11[..., 1]
+    y2 = q12[..., 1]
 
-    advect = torch.zeros_like(phi)
+    x2_x1 = x2-x1
+    y2_y1 = y2-y1
 
-    advect[inside] = phi[x[inside], y[inside]]
+    x2_x1_y2_y1 = (x2_x1 * y2_y1)
+    factor = 1/(x2_x1_y2_y1+1e-7)
+    factor = factor[..., None, None, None]
 
-    return advect
+    x2_x = x2 - x
+    x_x1 = x-x1
+    y2_y = y2 - y
+    y_y1 = y-y1
+
+    X = torch.stack([x2_x, x_x1], dim=2)
+    X = X.reshape(X.shape[0], X.shape[1], 1, 1, X.shape[2])
+    Y = torch.stack([y2_y, y_y1], dim=2)
+    Y = Y.reshape(Y.shape[0], Y.shape[1], 1, Y.shape[2], 1)
+    M = torch.stack([fq11, fq12, fq21, fq22], dim=-1)
+    M = M.reshape(*M.shape[:-1], 2, 2)
+
+    advect = factor * X @ M @ Y
+    return advect.squeeze()
 
 
 def init():
