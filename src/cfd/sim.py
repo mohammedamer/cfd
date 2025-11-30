@@ -44,7 +44,7 @@ def save_gif(dye_sol: Tensor):
     anim.save(gif_path, writer="pillow", fps=30)
 
 
-def pressure_boundary(p):
+def neumann_boundary(p):
 
     p[0:1] = p[1:2]
     p[GRID_X-2:GRID_X-1] = p[GRID_X-3:GRID_X-2]
@@ -53,7 +53,7 @@ def pressure_boundary(p):
     p[:, GRID_Y-2:GRID_Y-1] = p[:, GRID_Y-3:GRID_Y-2]
 
 
-def velocity_boundary(u):
+def impermeable_boundary(u):
 
     u[0, :, 0] = 0
     u[GRID_X-1, :, 0] = 0
@@ -166,9 +166,9 @@ def run():
         dye = diffuse(dye, kappa=D)
         dye = dye / (1+REACTION_LAMBDA*dt)
 
-        velocity_boundary(u)
-        pressure_boundary(p)
-        pressure_boundary(dye)
+        impermeable_boundary(u)
+        neumann_boundary(p)
+        neumann_boundary(dye)
 
         dye_sol.append(dye)
 
