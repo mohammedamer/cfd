@@ -1,5 +1,3 @@
-import logging
-
 import torch
 import torch.nn.functional as F
 from torch import Tensor
@@ -7,9 +5,7 @@ from tqdm import tqdm
 from celluloid import Camera
 import matplotlib.pyplot as plt
 
-from utils import log_tensor_stats, log
-
-logger = logging.getLogger(__name__)
+from utils import log
 
 GRID_X = 128
 GRID_Y = 128
@@ -17,11 +13,11 @@ GRID_Y = 128
 dt = 0.01
 T = 2.
 h = 1.
-nu = 1.
-g = -9.81
-D = 1.
+nu = 10.
+Fy = 1000.
+D = 10.
 
-REACTION_LAMBDA = 0.1
+REACTION_LAMBDA = 0.
 
 DIFF_ITER = 20
 DIV_FREE_ITER = 20
@@ -30,7 +26,7 @@ DYE_SQUARE_SIDE = 32
 DYE_VAL = 1.
 
 
-def save_gif(dye_sol):
+def save_gif(dye_sol: Tensor):
 
     fig = plt.figure()
     ax = plt.subplot()
@@ -38,14 +34,14 @@ def save_gif(dye_sol):
     camera = Camera(fig)
 
     for time_step in tqdm(dye_sol):
-
-        ax.imshow(time_step, cmap="inferno")
+        time_step = time_step.transpose(1, 0)
+        ax.imshow(time_step, cmap="inferno", origin="lower")
         camera.snap()
 
     anim = camera.animate()
 
-    gif_path = "sim.gif"
-    anim.save(gif_path, writer="pillow", fps=10)
+    gif_path = "output/sim.gif"
+    anim.save(gif_path, writer="pillow", fps=30)
 
 
 def pressure_boundary(p):
@@ -136,7 +132,7 @@ def init():
     cell = torch.stack([cellx, celly], dim=2)
 
     f = torch.zeros(size=(GRID_X, GRID_Y, 2))
-    # f[..., 1] = g
+    f[..., 1] = Fy
 
     dye = torch.zeros_like(p)
 
@@ -178,6 +174,8 @@ def run():
 
     dye_sol = torch.stack(dye_sol, dim=0)
     save_gif(dye_sol)
+
+    log("Done!")
 
 
 if __name__ == "__main__":
