@@ -16,9 +16,33 @@ T = 2.
 h = 1.
 nu = 1.
 g = -9.81
+D = 1.
+
+REACTION_LAMBDA = 0.1
 
 DIFF_ITER = 20
 DIV_FREE_ITER = 20
+
+DYE_SQUARE_SIDE = 32
+DYE_VAL = 1.
+
+
+def pressure_boundary(p):
+
+    p[0:1] = p[1:2]
+    p[GRID_X-2:GRID_X-1] = p[GRID_X-3:GRID_X-2]
+
+    p[:, 0:1] = p[:, 1:2]
+    p[:, GRID_Y-2:GRID_Y-1] = p[:, GRID_Y-3:GRID_Y-2]
+
+
+def velocity_boundary(u):
+
+    u[0, :, 0] = 0
+    u[GRID_X-1, :, 0] = 0
+
+    u[:, 0, 1] = 0
+    u[:, GRID_Y-1, 1] = 0
 
 
 def div(u):
@@ -44,10 +68,17 @@ def div_free(u, p):
     return u, p
 
 
-def diffuse(phi, kappa):
+def diffuse(phi: Tensor, kappa):
 
     alpha = kappa*dt/h**2
-    phi = F.pad(phi, pad=(0, 0, 1, 1, 1, 1), value=0.)
+
+    dim_count = phi.dim()
+    if dim_count == 3:
+        pad = (0, 0, 1, 1, 1, 1)
+    elif dim_count == 2:
+        pad = (1, 1, 1, 1)
+
+    phi = F.pad(phi, pad=pad, value=0.)
 
     for _ in range(DIFF_ITER):
         phi[1:-1, 1:-1] = (phi[1:-1, 1:-1] + alpha*(phi[2:, 1:-1] +
@@ -84,17 +115,27 @@ def init():
     cell = torch.stack([cellx, celly], dim=2)
 
     f = torch.zeros(size=(GRID_X, GRID_Y, 2))
-    f[..., 1] = g
+    # f[..., 1] = g
 
-    return u0, p, cell, f
+    dye = torch.zeros_like(p)
+
+    dye_s = torch.zeros_like(p)
+
+    centerx = GRID_X // 2
+    centery = GRID_Y // 2
+
+    dye_s[centerx-DYE_SQUARE_SIDE//2:centerx+DYE_SQUARE_SIDE//2,
+          centery-DYE_SQUARE_SIDE//2:centery+DYE_SQUARE_SIDE//2] = 1.
+
+    return u0, p, cell, f, dye, dye_s
 
 
 def run():
 
-    u, p, cell, f = init()
+    u, p, cell, f, dye, dye_s = init()
 
     log("init")
-    log_tensor_stats(u)
+    log_tensor_stats(dye)
 
     time_steps = torch.arange(0, T+dt, dt)
 
@@ -104,9 +145,17 @@ def run():
         u, p = div_free(u, p)
         u = semi_largangian(u, u, cell=cell)
         u, p = div_free(u, p)
+        dye = dye + dye_s*dt
+        dye = semi_largangian(dye, u, cell=cell)
+        dye = diffuse(dye, kappa=D)
+        dye = dye / (1+REACTION_LAMBDA*dt)
+
+        velocity_boundary(u)
+        pressure_boundary(p)
+        pressure_boundary(dye)
 
     log("post diff")
-    log_tensor_stats(u)
+    log_tensor_stats(dye)
 
 
 if __name__ == "__main__":
