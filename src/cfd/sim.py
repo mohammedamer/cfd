@@ -3,6 +3,9 @@ import logging
 import torch
 import torch.nn.functional as F
 from torch import Tensor
+from tqdm import tqdm
+from celluloid import Camera
+import matplotlib.pyplot as plt
 
 from utils import log_tensor_stats, log
 
@@ -25,6 +28,24 @@ DIV_FREE_ITER = 20
 
 DYE_SQUARE_SIDE = 32
 DYE_VAL = 1.
+
+
+def save_gif(dye_sol):
+
+    fig = plt.figure()
+    ax = plt.subplot()
+
+    camera = Camera(fig)
+
+    for time_step in tqdm(dye_sol):
+
+        ax.imshow(time_step, cmap="inferno")
+        camera.snap()
+
+    anim = camera.animate()
+
+    gif_path = "sim.gif"
+    anim.save(gif_path, writer="pillow", fps=10)
 
 
 def pressure_boundary(p):
@@ -57,7 +78,7 @@ def div_free(u, p):
     u_div = div(u)
 
     p = F.pad(p, pad=(1, 1, 1, 1), value=0.)
-    for _ in range(DIV_FREE_ITER):
+    for _ in tqdm(range(DIV_FREE_ITER)):
         p[1:-1, 1:-1] = (p[2:, 1:-1] + p[:-2, 1:-1] +
                          p[1:-1, 2:] + p[1:-1, :-2]-h**2*1/dt*u_div)/4.
 
@@ -80,7 +101,7 @@ def diffuse(phi: Tensor, kappa):
 
     phi = F.pad(phi, pad=pad, value=0.)
 
-    for _ in range(DIFF_ITER):
+    for _ in tqdm(range(DIFF_ITER)):
         phi[1:-1, 1:-1] = (phi[1:-1, 1:-1] + alpha*(phi[2:, 1:-1] +
                            phi[:-2, 1:-1] +
                            phi[1:-1, 2:]+phi[1:-1, :-2]))/(1+4*alpha)
@@ -134,12 +155,11 @@ def run():
 
     u, p, cell, f, dye, dye_s = init()
 
-    log("init")
-    log_tensor_stats(dye)
+    dye_sol = [dye]
 
     time_steps = torch.arange(0, T+dt, dt)
 
-    for t in time_steps:
+    for _ in tqdm(time_steps):
         u = u + f*dt
         u = diffuse(u, kappa=nu)
         u, p = div_free(u, p)
@@ -154,8 +174,10 @@ def run():
         pressure_boundary(p)
         pressure_boundary(dye)
 
-    log("post diff")
-    log_tensor_stats(dye)
+        dye_sol.append(dye)
+
+    dye_sol = torch.stack(dye_sol, dim=0)
+    save_gif(dye_sol)
 
 
 if __name__ == "__main__":
