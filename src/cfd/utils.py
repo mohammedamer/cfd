@@ -17,12 +17,14 @@ def save_gif(dye_sol: Tensor):
 
     fig = plt.figure()
     ax = plt.subplot()
+    ax.set_axis_off()
 
     camera = Camera(fig)
 
     for time_step in tqdm(dye_sol):
         time_step = time_step.transpose(1, 0)
         ax.imshow(time_step, cmap="inferno", origin="lower")
+        fig.tight_layout()
         camera.snap()
 
     anim = camera.animate()
