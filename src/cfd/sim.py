@@ -5,6 +5,7 @@ from rich.progress import track
 import hydra
 
 from utils import log, save_gif
+from geometry import get_geometry_mask
 
 
 h = 1.
@@ -158,17 +159,7 @@ def init(gridx, gridy, Fy, geometry, dye_source):
 
     dye_s = torch.zeros_like(p)
 
-    geometry_type = geometry.type
-    if geometry_type == "circle":
-        mask = (cell[..., 0]-geometry.center.x)**2 + \
-            (cell[..., 1] - geometry.center.y)**2 <= geometry.radius**2
-    elif geometry_type == "rect":
-        x1, y1 = geometry.origin.x, geometry.origin.y
-        x2, y2 = x1+geometry.size.width, y1+geometry.size.height
-
-        cellx = cell[..., 0]
-        celly = cell[..., 1]
-        mask = (cellx >= x1) & (cellx <= x2) & (celly >= y1) & (celly <= y2)
+    mask = get_geometry_mask(geometry, grid=cell)
 
     dye_s[mask] = dye_source
 
