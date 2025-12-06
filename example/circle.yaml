@@ -32,14 +32,11 @@ f:
 dye:
   val: 1.
   geometry:
-    type: rect # circle, rect(x, y, width, length)
-    origin:
-      x: 56
-      y: 56
-    size:
-      width: 16
-      height: 16
+    type: circle # circle, square(x, y,)
     radius: 4.
+    origin:
+      x: 64
+      y: 64
   react_lambda: 0.
   D: 1.
   src: 1. 
