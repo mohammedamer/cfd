@@ -1,0 +1,49 @@
+run:
+  T: 2.
+  dt: 0.01
+  diff_iter: 20
+
+
+grid:
+  x: 128
+  y: 128
+
+u:
+  x: 0.
+  y: 0.
+  start: null
+  end: null
+  default: 0.
+  nu: 1.
+
+p:
+  val: 0.
+  start: null
+  end: null
+  default: 0.
+
+f:
+  x: 0.
+  y: 500.
+  start: null
+  end: null
+  default: 0.
+
+dye:
+  val: 1.
+  radius: 4.
+  react_lambda: 0.
+  D: 1.
+  src: 1. 
+
+log:
+  gif_path: "output/sim.gif"
+
+hydra:
+  run:
+    dir: .
+  output_subdir: null
+
+defaults:
+  - override hydra/job_logging: disabled
+  - override hydra/hydra_logging: disabled

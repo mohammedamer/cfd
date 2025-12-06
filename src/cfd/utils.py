@@ -13,7 +13,7 @@ def log_tensor_stats(tensor):
     log(f"{tensor.max()=} {tensor.min()=}")
 
 
-def save_gif(dye_sol: Tensor):
+def save_gif(dye_sol: Tensor, gif_path):
 
     fig = plt.figure()
     ax = plt.subplot()
@@ -28,6 +28,4 @@ def save_gif(dye_sol: Tensor):
         camera.snap()
 
     anim = camera.animate()
-
-    gif_path = "output/sim.gif"
     anim.save(gif_path, writer="pillow", fps=30)

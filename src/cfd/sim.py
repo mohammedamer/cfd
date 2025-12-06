@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 from torch import Tensor
 from rich.progress import track
-import typer
+import hydra
 
 from utils import log, save_gif
 
@@ -168,20 +168,30 @@ def init(gridx, gridy, Fy, dye_radius, dye_source):
     return u0, p, cell, f, dye, dye_s
 
 
-def run(T: float = 2., dt: float = 0.01, nu: float = 1.,
-        reaction_lambda: float = 0., dye_diff: float = 1.,
-        gridx: int = 128, gridy: int = 128, Fy: float = 500.,
-        dye_radius: float = 4., dye_src: float = 1., diff_iter: int = 20,):
+# def run(T: float = 2., dt: float = 0.01, nu: float = 1.,
+#         reaction_lambda: float = 0., dye_diff: float = 1.,
+#         gridx: int = 128, gridy: int = 128, Fy: float = 500.,
+#         dye_radius: float = 4., dye_src: float = 1., diff_iter: int = 20,):
 
-    u, p, cell, f, dye, dye_s = init(gridx, gridy, Fy, dye_radius, dye_src)
+@hydra.main(version_base=None, config_path=".", config_name="config")
+def run(cfg):
+
+    u, p, cell, f, dye, dye_s = init(
+        cfg.grid.x, cfg.grid.y, cfg.f.y, cfg.dye.radius, cfg.dye.src)
 
     dye_sol = [dye]
 
-    time_steps = torch.arange(0, T+dt, dt)
+    dt = cfg.run.dt
+    time_steps = torch.arange(0, cfg.run.T+dt, dt)
+
+    diff_iter = cfg.run.diff_iter
+    dye_diff = cfg.dye.D
+    reaction_lambda = cfg.dye.react_lambda
 
     for _ in track(time_steps, description="cfd"):
         u = u + f*dye[..., None]*dt
-        u = diffuse(u, kappa=nu, dt=dt, diff_iter=diff_iter)
+
+        u = diffuse(u, kappa=cfg.u.nu, dt=dt, diff_iter=diff_iter)
         u, p = div_free(u, p, dt=dt, diff_iter=diff_iter)
         u = semi_largangian(u, u, cell=cell, dt=dt)
         u, p = div_free(u, p, dt=dt, diff_iter=diff_iter)
@@ -197,10 +207,10 @@ def run(T: float = 2., dt: float = 0.01, nu: float = 1.,
         dye_sol.append(dye)
 
     dye_sol = torch.stack(dye_sol, dim=0)
-    save_gif(dye_sol)
+    save_gif(dye_sol, gif_path=cfg.log.gif_path)
 
     log("Done!")
 
 
 if __name__ == "__main__":
-    typer.run(run)
+    run()
