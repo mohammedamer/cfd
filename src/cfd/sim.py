@@ -143,7 +143,7 @@ def semi_largangian(phi: Tensor, u: Tensor, cell: Tensor, dt: float):
     return advect.squeeze()
 
 
-def init(gridx, gridy, Fy, dye_radius, dye_source):
+def init(gridx, gridy, Fy, geometry, dye_source):
     u0 = torch.zeros(size=(gridx, gridy, 2))
     p = torch.zeros(size=(gridx, gridy))
 
@@ -158,26 +158,19 @@ def init(gridx, gridy, Fy, dye_radius, dye_source):
 
     dye_s = torch.zeros_like(p)
 
-    centerx = gridx // 2
-    centery = gridy // 2
-
-    mask = (cell[..., 0]-centerx)**2 + \
-        (cell[..., 1] - centery)**2 <= dye_radius**2
+    if geometry.type == "circle":
+        mask = (cell[..., 0]-geometry.center.x)**2 + \
+            (cell[..., 1] - geometry.center.y)**2 <= geometry.radius**2
     dye_s[mask] = dye_source
 
     return u0, p, cell, f, dye, dye_s
 
 
-# def run(T: float = 2., dt: float = 0.01, nu: float = 1.,
-#         reaction_lambda: float = 0., dye_diff: float = 1.,
-#         gridx: int = 128, gridy: int = 128, Fy: float = 500.,
-#         dye_radius: float = 4., dye_src: float = 1., diff_iter: int = 20,):
-
 @hydra.main(version_base=None, config_path=".", config_name="config")
 def run(cfg):
 
     u, p, cell, f, dye, dye_s = init(
-        cfg.grid.x, cfg.grid.y, cfg.f.y, cfg.dye.radius, cfg.dye.src)
+        cfg.grid.x, cfg.grid.y, cfg.f.y, cfg.dye.geometry, cfg.dye.src)
 
     dye_sol = [dye]
 
