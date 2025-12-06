@@ -14,7 +14,7 @@ u:
   start: null
   end: null
   default: 0.
-  nu: 1.
+  nu: 0.
 
 p:
   val: 0.
@@ -24,7 +24,7 @@ p:
 
 f:
   x: 0.
-  y: 500.
+  y: .0
   start: null
   end: null
   default: 0.
@@ -34,14 +34,13 @@ dye:
   geometry:
     type: rect # circle, rect(x, y, width, length)
     origin:
-      x: 56
-      y: 56
+      x: 0
+      y: 0
     size:
-      width: 16
-      height: 16
-    radius: 4.
+      width: 128
+      height: 64
   react_lambda: 0.
-  D: 1.
+  D: 0.
   src: 1. 
 
 log:

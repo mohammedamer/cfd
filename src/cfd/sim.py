@@ -144,7 +144,7 @@ def semi_largangian(phi: Tensor, u: Tensor, cell: Tensor, dt: float):
     return advect.squeeze()
 
 
-def init(gridx, gridy, Fy, geometry, dye_source):
+def init(gridx, gridy, Fy, geometry, dye_source, dye_val):
     u0 = torch.zeros(size=(gridx, gridy, 2))
     p = torch.zeros(size=(gridx, gridy))
 
@@ -161,6 +161,7 @@ def init(gridx, gridy, Fy, geometry, dye_source):
 
     mask = get_geometry_mask(geometry, grid=cell)
 
+    dye[mask] = dye_val
     dye_s[mask] = dye_source
 
     return u0, p, cell, f, dye, dye_s
@@ -170,7 +171,9 @@ def init(gridx, gridy, Fy, geometry, dye_source):
 def run(cfg):
 
     u, p, cell, f, dye, dye_s = init(
-        cfg.grid.x, cfg.grid.y, cfg.f.y, cfg.dye.geometry, cfg.dye.src)
+        cfg.grid.x, cfg.grid.y, cfg.f.y, cfg.dye.geometry,
+        dye_source=cfg.dye.src,
+        dye_val=cfg.dye.val)
 
     dye_sol = [dye]
 
