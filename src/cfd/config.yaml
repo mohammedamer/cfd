@@ -1,5 +1,5 @@
 run:
-  T: 2.
+  T: 3.
   dt: 0.01
   diff_iter: 20
 
@@ -24,7 +24,7 @@ p:
 
 f:
   x: 0.
-  y: .0
+  y: 500.
   start: null
   end: null
   default: 0.
@@ -32,13 +32,11 @@ f:
 dye:
   val: 1.
   geometry:
-    type: rect # circle, rect(x, y, width, length)
-    origin:
-      x: 0
-      y: 0
-    size:
-      width: 128
-      height: 64
+    type: circle # circle, rect(x, y, width, length)
+    center:
+      x: 64
+      y: 64.
+    radius: 8.
   react_lambda: 0.
   D: 0.
   src: 1. 
