@@ -30,11 +30,11 @@ f:
   default: 0.
 
 dye:
-  val: 1.
+  val: 0.
   geometry:
     type: circle # circle, square(x, y,)
     radius: 4.
-    origin:
+    center:
       x: 64
       y: 64
   react_lambda: 0.
